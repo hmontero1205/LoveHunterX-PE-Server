@@ -11,12 +11,25 @@ public class Handler extends ChannelInboundHandlerAdapter {
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
 		ByteBuf m = (ByteBuf) msg;
 		try {
-			System.out.println(m.toString(CharsetUtil.US_ASCII));
+			String message = m.toString(CharsetUtil.US_ASCII);
+			System.out.println(message);
+			interpretInput(message);
 		} finally {
 			m.release();
 		}
 	}
 	
+	private void interpretInput(String message) {
+		String[] messageArgs = message.split(";");
+		if(messageArgs[0].equals("auth")) {
+			System.out.println(Server.db.authenticate(messageArgs[1], messageArgs[2]));
+		}
+		if(messageArgs[0].equals("reg")) {
+			System.out.println(Server.db.register(messageArgs[1], messageArgs[2]));
+		}
+		
+	}
+
 	@Override
 	public void channelRegistered(ChannelHandlerContext ctx) {
 		System.out.println("Someone connected to the server");

@@ -39,7 +39,7 @@ public class Server {
 	
 	public static void main(String[] args) throws Exception {
 		db = new Database();
-		System.out.println(db.authenticate("Brendan", "ilikemen69!"));
+		//System.out.println(db.authenticate("Brendan", "ilikemen69!"));
 		new Server().run();
 	}
 	
