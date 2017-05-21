@@ -16,5 +16,10 @@ public class Handler extends ChannelInboundHandlerAdapter {
 			m.release();
 		}
 	}
+	
+	@Override
+	public void channelRegistered(ChannelHandlerContext ctx) {
+		System.out.println("Hey");
+	}
 
 }
