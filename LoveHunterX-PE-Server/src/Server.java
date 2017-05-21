@@ -9,7 +9,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public class Server {
 	
-	private static final int PORT = 8080;
+	private static final int PORT = 8000;
+	public static Database db;
 	
 	public void run() throws Exception {
 		EventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -37,6 +38,8 @@ public class Server {
 	}
 	
 	public static void main(String[] args) throws Exception {
+		db = new Database();
+		System.out.println(db.authenticate("Brendan", "ilikemen69!"));
 		new Server().run();
 	}
 	

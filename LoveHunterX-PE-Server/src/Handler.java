@@ -19,7 +19,7 @@ public class Handler extends ChannelInboundHandlerAdapter {
 	
 	@Override
 	public void channelRegistered(ChannelHandlerContext ctx) {
-		System.out.println("Hey");
+		System.out.println("Someone connected to the server");
 	}
 
 }
