@@ -6,7 +6,7 @@ public class Database {
 	public Database() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
+			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/lovehunterx", "root", "lovehunterx");
 //			Statement stmt = con.createStatement();
 //			ResultSet rs = stmt.executeQuery("select * from users");
 //			while (rs.next())

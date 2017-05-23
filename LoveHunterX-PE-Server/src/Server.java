@@ -12,7 +12,7 @@ import io.netty.handler.codec.string.StringEncoder;
 
 public class Server {
 	
-	private static final int PORT = 8000;
+	private static final int PORT = 8080;
 	public static Database db;
 	
 	public void run() throws Exception {
@@ -43,9 +43,14 @@ public class Server {
         }
 	}
 	
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
+		System.out.println("Running");
 		db = new Database();
-		new Server().run();
+		try {
+			new Server().run();
+		} catch (Exception e) {
+			System.out.println(e);
+		}
 	}
 	
 }
