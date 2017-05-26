@@ -1,4 +1,5 @@
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -34,18 +35,19 @@ public class Server {
              })
              .option(ChannelOption.SO_BACKLOG, 128)
              .childOption(ChannelOption.SO_KEEPALIVE, true);
-        	
+
         	ChannelFuture f = b.bind(PORT).sync();
         	f.channel().closeFuture().sync();
         } finally {
         	workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
+        	bossGroup.shutdownGracefully();
         }
 	}
 	
 	public static void main(String[] args) {
 		System.out.println("Running");
 		db = new Database();
+		
 		try {
 			new Server().run();
 		} catch (Exception e) {

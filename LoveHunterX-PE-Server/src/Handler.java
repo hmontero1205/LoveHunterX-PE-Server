@@ -1,65 +1,140 @@
-import java.util.Date;
-import java.util.HashMap;
-
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.CharsetUtil;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
 public class Handler extends ChannelInboundHandlerAdapter {
+	private static final AttributeKey<Client> CLIENT_INFO = AttributeKey.valueOf("info");
+	private static final ChannelGroup clients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+	static {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("Started");
+				while (true) {
+					for (Channel channel : clients) {
+						Client cli = channel.attr(CLIENT_INFO).get();
+						if (cli.getDirection() != 0) {
+							cli.move(1 / 3f);
+						}
+					}
+
+					try {
+						Thread.sleep((int) ((1 / 3f) * 1000));
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}).start();
+	}
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
 		String message = (String) msg;
-		//String message = m.toString(CharsetUtil.US_ASCII);
-		// System.out.println(message);
+		System.out.println(message);
+
 		try {
 			interpretInput(ctx, message);
 		} catch (ParseException e) {
 			e.printStackTrace();
-		} finally {
-			//message.release();
 		}
 	}
 
 	private void interpretInput(ChannelHandlerContext ctx, String message) throws ParseException {
 		JSONParser parser = new JSONParser();
-		//System.out.println(message);
 		JSONObject obj = (JSONObject) parser.parse(message);
 		Packet p = new Packet(obj);
 		switch (p.getAction()) {
-			case "auth":
-				handleAuthentication(ctx, p);
-				break;
-			case "reg":
-				handleRegistration(ctx, p);
-				break;
+		case "auth":
+			handleAuthentication(ctx, p);
+			break;
+		case "reg":
+			handleRegistration(ctx, p);
+			break;
+		case "join":
+			handleJoin(ctx, p);
+			break;
+		case "move":
+			handleMovement(ctx, p);
 		}
 	}
 
-    private void handleRegistration(ChannelHandlerContext ctx, Packet p) {
-    	boolean success = Server.db.register(p.getData("user"), p.getData("pass"));
+	private void handleRegistration(ChannelHandlerContext ctx, Packet p) {
+		boolean success = Server.db.register(p.getData("user"), p.getData("pass"));
 		Packet regPacket = Packet.createRegPacket(success);
-		//System.out.println("sending response");
 		ctx.writeAndFlush(regPacket.toJSON());
-		
 	}
 
 	private void handleAuthentication(ChannelHandlerContext ctx, Packet p) {
 		boolean success = Server.db.authenticate(p.getData("user"), p.getData("pass"));
 		Packet authPacket = Packet.createAuthPacket(success);
-		//System.out.println("sending response");
 		ctx.writeAndFlush(authPacket.toJSON());
-		
+
+		if (success) {
+			Client cli = new Client(ctx.channel());
+			cli.login(p.getData("user"));
+			ctx.channel().attr(AttributeKey.valueOf("info")).set(cli);
+
+			clients.add(ctx.channel());
+			System.out.println(clients.size());
+		}
 	}
-	
+
+	private void handleJoin(ChannelHandlerContext ctx, Packet p) {
+		String room = p.getData("room");
+		Client c = ctx.channel().attr(CLIENT_INFO).get();
+		c.joinRoom(room);
+
+		Packet update = Packet.createJoinPacket(c.getUsername(), room, 0, 0);
+		for (Channel channel : clients) {
+			Client other = channel.attr(CLIENT_INFO).get();
+			if (!other.isInRoom(room)) {
+				continue;
+			}
+
+			p.addData("user", other.getUsername());
+			p.addData("x", String.valueOf(other.getX()));
+			p.addData("y", String.valueOf(other.getY()));
+			c.getChannel().writeAndFlush(p.toJSON());
+
+			if (!other.getUsername().equals(c.getUsername())) {
+				other.getChannel().writeAndFlush(update.toJSON());
+			}
+		}
+	}
+
+	private void handleMovement(ChannelHandlerContext ctx, Packet p) {
+		Client c = ctx.channel().attr(CLIENT_INFO).get();
+		c.setDirection(Integer.valueOf(p.getData("direction")));
+		p.addData("user", c.getUsername());
+
+		for (Channel cli : clients) {
+			Client other = cli.attr(CLIENT_INFO).get();
+			if (!other.isInRoom(c.getRoom())) {
+				continue;
+			}
+
+			other.getChannel().writeAndFlush(p.toJSON());
+		}
+	}
+
 	@Override
 	public void channelRegistered(ChannelHandlerContext ctx) {
 		System.out.println("Someone connected to the server");
+	}
+
+	@Override
+	public void channelUnregistered(ChannelHandlerContext ctx) {
+		System.out.println("Someone disconnected to the server");
+		clients.remove(ctx.channel());
 	}
 
 }
