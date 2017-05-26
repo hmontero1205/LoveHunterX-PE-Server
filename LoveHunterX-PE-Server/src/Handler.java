@@ -44,7 +44,6 @@ public class Handler extends ChannelInboundHandlerAdapter {
 		try {
 			interpretInput(ctx, message);
 		} catch (ParseException e) {
-			e.printStackTrace();
 		}
 	}
 
