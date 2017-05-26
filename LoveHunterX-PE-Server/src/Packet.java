@@ -54,6 +54,13 @@ public class Packet {
 		return new Packet("join", joinData);
 	}
 
+	public static Packet createLeavePacket(String user, String room) {
+		HashMap<String, String> leaveData = new HashMap<String, String>();
+		leaveData.put("user", user);
+		leaveData.put("room", room);
+		return new Packet("leave", leaveData);
+	}
+
 	public String toJSON() {
 		HashMap<String, Object> obj = new HashMap<String, Object>();
 		obj.put("action", this.action);

@@ -30,7 +30,7 @@ public class Server {
                 	 ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast("decoder", new StringDecoder());
                      pipeline.addLast("encoder", new StringEncoder());
-                     ch.pipeline().addLast(new Handler());
+                     pipeline.addLast(new Handler());
                  }
              })
              .option(ChannelOption.SO_BACKLOG, 128)

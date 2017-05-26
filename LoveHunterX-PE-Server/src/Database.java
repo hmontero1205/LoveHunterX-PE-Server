@@ -29,7 +29,6 @@ public class Database {
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM users WHERE name = ?");
 			ps.setString(1, u);
-			ps.setString(2, p);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return false;

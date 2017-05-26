@@ -135,6 +135,21 @@ public class Handler extends ChannelInboundHandlerAdapter {
 	public void channelUnregistered(ChannelHandlerContext ctx) {
 		System.out.println("Someone disconnected to the server");
 		clients.remove(ctx.channel());
+		
+		Client c = ctx.channel().attr(CLIENT_INFO).get();
+		if (c == null) {
+			return;
+		}
+		
+		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
+		for (Channel cli : clients) {
+			Client other = cli.attr(CLIENT_INFO).get();
+			if (!other.isInRoom(c.getRoom())) {
+				continue;
+			}
+
+			other.getChannel().writeAndFlush(leave.toJSON());
+		}
 	}
 
 }
