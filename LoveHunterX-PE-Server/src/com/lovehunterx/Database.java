@@ -1,3 +1,4 @@
+package com.lovehunterx;
 import java.sql.*;
 
 public class Database {

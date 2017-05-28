@@ -1,7 +1,8 @@
-import io.netty.channel.Channel;
+package com.lovehunterx;
+import java.net.InetSocketAddress;
 
 public class Client {
-	private Channel channel;
+	private InetSocketAddress addr;
 	
 	private String username;
 	private String room;
@@ -9,12 +10,12 @@ public class Client {
 	private float x, y;
 	private int direction;
 
-	public Client(Channel ch) {
-		this.channel = ch;
+	public Client(InetSocketAddress addr) {
+		this.addr = addr;
 	}
 	
-	public Channel getChannel() {
-		return channel;
+	public InetSocketAddress getAddress() {
+		return addr;
 	}
 
 	public void login(String username) {
