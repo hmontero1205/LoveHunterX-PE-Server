@@ -73,18 +73,30 @@ public class Handler extends ChannelInboundHandlerAdapter {
 	}
 
 	private void handleAuthentication(ChannelHandlerContext ctx, Packet p) {
-		boolean success = Server.db.authenticate(p.getData("user"), p.getData("pass"));
+		boolean success = Server.db.authenticate(p.getData("user"), p.getData("pass")) && !isLoggedIn(p.getData("user"));
 		Packet authPacket = Packet.createAuthPacket(success);
 		ctx.writeAndFlush(authPacket.toJSON());
 
 		if (success) {
 			Client cli = new Client(ctx.channel());
 			cli.login(p.getData("user"));
-			ctx.channel().attr(AttributeKey.valueOf("info")).set(cli);
+			ctx.channel().attr(CLIENT_INFO).set(cli);
 
 			clients.add(ctx.channel());
 			System.out.println(clients.size());
 		}
+	}
+	
+	public boolean isLoggedIn(String username) {
+		for (Channel channel : clients) {
+			Client cli = channel.attr(CLIENT_INFO).get();
+			
+			if (cli.getUsername().equals(username)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	private void handleJoin(ChannelHandlerContext ctx, Packet p) {

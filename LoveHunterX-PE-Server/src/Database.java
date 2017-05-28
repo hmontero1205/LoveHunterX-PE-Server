@@ -6,7 +6,7 @@ public class Database {
 	public Database() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/lovehunterx", "root", "lovehunterx");
+			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/lovehunterx?autoReconnect=true", "root", "lovehunterx");
 		} catch (Exception e) {
 			System.out.println(e);
 		}
