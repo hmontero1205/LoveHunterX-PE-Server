@@ -73,7 +73,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 		if (success) {
 			Client cli = new Client(sender);
-			cli.login(p.getData("user"));
+			cli.setUsername(p.getData("user"));
 
 			clients.put(sender, cli);
 			System.out.println(clients.size());
@@ -107,6 +107,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			p.addData("user", other.getUsername());
 			p.addData("x", String.valueOf(other.getX()));
 			p.addData("y", String.valueOf(other.getY()));
+			p.addData("vel_x", String.valueOf(other.getVelocityX()));
+			p.addData("vel_y", String.valueOf(other.getVelocityY()));
 			ctx.writeAndFlush(createDatagramPacket(p, sender));
 
 			if (!other.getUsername().equals(c.getUsername())) {
@@ -117,7 +119,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private void handleMovement(Packet p) {
 		Client c = clients.get(sender);
-		c.setDirection(Integer.valueOf(p.getData("direction")));
+		c.setVelocityX(Float.valueOf(p.getData("vel_x")));
+		c.setVelocityY(Float.valueOf(p.getData("vel_y")));
 		p.addData("user", c.getUsername());
 
 		for (Entry<InetSocketAddress, Client> entry : clients.entrySet()) {

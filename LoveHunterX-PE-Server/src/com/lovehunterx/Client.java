@@ -8,6 +8,7 @@ public class Client {
 	private String room;
 
 	private float x, y;
+	private float velX, velY;
 	private int direction;
 
 	public Client(InetSocketAddress addr) {
@@ -18,7 +19,7 @@ public class Client {
 		return addr;
 	}
 
-	public void login(String username) {
+	public void setUsername(String username) {
 		this.username = username;
 	}
 
@@ -32,6 +33,14 @@ public class Client {
 
 	public void setDirection(int dir) {
 		this.direction = dir;
+	}
+	
+	public void setVelocityX(float velocityX) {
+		this.velX = velocityX;
+	}
+	
+	public void setVelocityY(float velocityY) {
+		this.velY = velocityY;
 	}
 
 	public void move(float deltaTime) {
@@ -52,6 +61,14 @@ public class Client {
 
 	public boolean isInRoom(String room) {
 		return this.room != null && this.room.equals(room);
+	}
+	
+	public float getVelocityX() {
+		return velX;
+	}
+	
+	public float getVelocityY() {
+		return velY;
 	}
 
 	public float getX() {
