@@ -1,3 +1,5 @@
+package com.lovehunterx;
+
 import java.util.HashMap;
 
 import org.json.simple.JSONObject;
@@ -15,6 +17,11 @@ public class Packet {
 	public Packet(String a, HashMap<String, String> d) {
 		this.action = a;
 		this.data = d;
+	}
+	
+	public Packet(String a) {
+		this.action = a;
+		this.data = new HashMap<String, String>();
 	}
 
 	public String getAction() {
@@ -43,6 +50,10 @@ public class Packet {
 		HashMap<String, String> regData = new HashMap<String, String>();
 		regData.put("success", String.valueOf(success));
 		return new Packet("reg", regData);
+	}
+
+	public static Packet createUpdatePacket(Client cli) {
+		return null;
 	}
 
 	public static Packet createJoinPacket(String user, String room, float x, float y) {
