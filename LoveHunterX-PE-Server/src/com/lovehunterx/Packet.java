@@ -18,7 +18,7 @@ public class Packet {
 		this.action = a;
 		this.data = d;
 	}
-	
+
 	public Packet(String a) {
 		this.action = a;
 		this.data = new HashMap<String, String>();
@@ -30,6 +30,14 @@ public class Packet {
 
 	public String getData(String key) {
 		return this.data.get(key);
+	}
+
+	public float getFloat(String key) {
+		try {
+			return Float.valueOf(this.data.get(key));
+		} catch (Exception ex) {
+			return 0;
+		}
 	}
 
 	public void addData(String key, String value) {
@@ -50,10 +58,6 @@ public class Packet {
 		HashMap<String, String> regData = new HashMap<String, String>();
 		regData.put("success", String.valueOf(success));
 		return new Packet("reg", regData);
-	}
-
-	public static Packet createUpdatePacket(Client cli) {
-		return null;
 	}
 
 	public static Packet createJoinPacket(String user, String room, float x, float y) {

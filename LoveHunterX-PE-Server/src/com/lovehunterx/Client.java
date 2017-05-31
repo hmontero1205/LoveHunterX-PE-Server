@@ -88,9 +88,14 @@ public class Client {
 		return (delta >> index & 0b0001) == 0b0001;
 	}
 
+	public void setDelta(int index) {
+		byte mask = (byte) (0b0001 << index);
+		delta |= mask;
+	}
+
 	public void setX(float x) {
 		if (this.x != x) {
-			delta |= 0b1000;
+			setDelta(3);
 		}
 
 		this.x = x;
@@ -98,7 +103,7 @@ public class Client {
 
 	public void setY(float y) {
 		if (this.y != y) {
-			delta |= 0b0100;
+			setDelta(2);
 		}
 
 		this.y = y;
@@ -106,7 +111,7 @@ public class Client {
 
 	public void setVelocityX(float velX) {
 		if (this.velX != velX) {
-			delta |= 0b0010;
+			setDelta(1);
 		}
 
 		this.velX = velX;
@@ -114,7 +119,7 @@ public class Client {
 
 	public void setVelocityY(float velY) {
 		if (this.y == 0 && this.velY != velY) {
-			delta |= 0b0001;
+			setDelta(0);
 		}
 
 		this.velY = velY;

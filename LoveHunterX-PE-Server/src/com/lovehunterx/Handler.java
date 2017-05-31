@@ -1,8 +1,6 @@
 package com.lovehunterx;
 
 import java.net.InetSocketAddress;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
@@ -79,10 +77,14 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 	}
 
 	private void handleJoin(Packet p) {
-		String room = p.getData("room");
 		Client c = Server.getState().getClient(sender);
-		c.joinRoom(room);
+		if (c == null) {
+			return;
+		}
 
+		String room = p.getData("room");
+		c.joinRoom(room);
+		
 		Packet update = Packet.createJoinPacket(c.getUsername(), room, 0, 0);
 		for (Client other : Server.getState().getClients()) {
 			if (!other.isInRoom(room)) {
@@ -103,10 +105,14 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 	}
 
 	private void handleMovement(Packet p) {
-		Float velX = Float.valueOf(p.getData("vel_x"));
-		Float velY = Float.valueOf(p.getData("vel_y"));
-
 		Client c = Server.getState().getClient(sender);
+		if (c == null) {
+			return;
+		}
+		
+		float velX = p.getFloat("vel_x");
+		float velY = p.getFloat("vel_y");
+		
 		if (c.getY() == 0 && velY > 0.30) {
 			c.setVelocityY(0.8F);
 			c.setVelocityX(3F * velX);
@@ -116,13 +122,16 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 	}
 
 	public void handleLeave() {
-		Client cli = Server.getState().getClient(sender);
-		Packet leave = Packet.createLeavePacket(cli.getUsername(), cli.getRoom());
+		Client c = Server.getState().getClient(sender);
+		if (c == null) {
+			return;
+		}
 
 		Server.getState().removeClient(sender);
 
+		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
 		for (Client other : Server.getState().getClients()) {
-			if (!other.isInRoom(cli.getRoom())) {
+			if (!other.isInRoom(c.getRoom())) {
 				continue;
 			}
 
