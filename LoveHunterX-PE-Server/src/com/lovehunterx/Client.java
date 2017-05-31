@@ -1,20 +1,19 @@
 package com.lovehunterx;
+
 import java.net.InetSocketAddress;
 
 public class Client {
 	private InetSocketAddress addr;
-	
 	private String username;
 	private String room;
-
 	private float x, y;
 	private float velX, velY;
-	private int direction;
+	private byte delta = 0b0000;
 
 	public Client(InetSocketAddress addr) {
 		this.addr = addr;
 	}
-	
+
 	public InetSocketAddress getAddress() {
 		return addr;
 	}
@@ -25,30 +24,6 @@ public class Client {
 
 	public String getUsername() {
 		return username;
-	}
-	
-	public int getDirection() {
-		return direction;
-	}
-
-	public void setDirection(int dir) {
-		this.direction = dir;
-	}
-	
-	public void setVelocityX(float velocityX) {
-		this.velX = velocityX;
-	}
-	
-	public void setVelocityY(float velocityY) {
-		this.velY = velocityY;
-	}
-
-	public void move(float deltaTime) {
-		if (direction == 0) {
-			return;
-		}
-
-		x += direction * 30 * (deltaTime / 1);
 	}
 
 	public void joinRoom(String room) {
@@ -62,13 +37,35 @@ public class Client {
 	public boolean isInRoom(String room) {
 		return this.room != null && this.room.equals(room);
 	}
-	
-	public float getVelocityX() {
-		return velX;
+
+	public void update(float delta) {
+		this.setX(this.getX() + this.getVelocityX() * 100 * delta);
+		this.setY(Math.max(0, this.getY() + this.getVelocityY() * 200 * delta));
+		this.setVelocityY(this.y != 0 ? this.getVelocityY() - (2F * delta) : 0);
 	}
-	
-	public float getVelocityY() {
-		return velY;
+
+	public Packet getDeltaUpdate() {
+		Packet packet = new Packet("move");
+		packet.addData("user", username);
+		packet.addData("room", room);
+
+		if (hasDelta(3)) {
+			packet.addData("x", String.valueOf(x));
+		}
+
+		if (hasDelta(1)) {
+			packet.addData("vel_x", String.valueOf(velX));
+		}
+
+		if (hasDelta(2)) {
+			packet.addData("y", String.valueOf(y));
+		}
+
+		if (hasDelta(0)) {
+			packet.addData("vel_y", String.valueOf(velY));
+		}
+
+		return delta == 0 ? null : packet;
 	}
 
 	public float getX() {
@@ -77,6 +74,54 @@ public class Client {
 
 	public float getY() {
 		return y;
+	}
+
+	public float getVelocityX() {
+		return velX;
+	}
+
+	public float getVelocityY() {
+		return velY;
+	}
+
+	public boolean hasDelta(int index) {
+		return (delta >> index & 0b0001) == 0b0001;
+	}
+
+	public void setX(float x) {
+		if (this.x != x) {
+			delta |= 0b1000;
+		}
+
+		this.x = x;
+	}
+
+	public void setY(float y) {
+		if (this.y != y) {
+			delta |= 0b0100;
+		}
+
+		this.y = y;
+	}
+
+	public void setVelocityX(float velX) {
+		if (this.velX != velX) {
+			delta |= 0b0010;
+		}
+
+		this.velX = velX;
+	}
+
+	public void setVelocityY(float velY) {
+		if (this.y == 0 && this.velY != velY) {
+			delta |= 0b0001;
+		}
+
+		this.velY = velY;
+	}
+
+	public void clearDelta() {
+		delta = 0;
 	}
 
 }

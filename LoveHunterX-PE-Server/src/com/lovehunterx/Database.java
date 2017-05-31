@@ -2,12 +2,15 @@ package com.lovehunterx;
 import java.sql.*;
 
 public class Database {
+	private static final String DATABASE = "jdbc:mysql://localhost:3306/lovehunterx?autoReconnect=true";
+	private static final String USERNAME = "root";
+	private static final String PASSWORD = "lovehunterx";
 	private Connection con;
 
 	public Database() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/lovehunterx?autoReconnect=true", "root", "lovehunterx");
+			con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
 		} catch (Exception e) {
 			System.out.println(e);
 		}

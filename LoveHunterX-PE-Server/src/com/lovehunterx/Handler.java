@@ -15,11 +15,10 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.CharsetUtil;
 
 public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
-	private static final ConcurrentHashMap<InetSocketAddress, Client> clients = new ConcurrentHashMap<InetSocketAddress, Client>();
 	private ChannelHandlerContext ctx;
 	private InetSocketAddress sender;
 
-	private static DatagramPacket createDatagramPacket(Packet p, InetSocketAddress addr) {
+	public static DatagramPacket createDatagramPacket(Packet p, InetSocketAddress addr) {
 		return new DatagramPacket(Unpooled.copiedBuffer(p.toJSON(), CharsetUtil.UTF_8), addr);
 	}
 
@@ -66,7 +65,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private void handleAuthentication(Packet p) {
 		boolean success = Server.db.authenticate(p.getData("user"), p.getData("pass"))
-				&& !isLoggedIn(p.getData("user"));
+				&& !Server.getState().isLoggedIn(p.getData("user"));
 
 		Packet authPacket = Packet.createAuthPacket(success);
 		ctx.writeAndFlush(createDatagramPacket(authPacket, sender));
@@ -75,31 +74,17 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			Client cli = new Client(sender);
 			cli.setUsername(p.getData("user"));
 
-			clients.put(sender, cli);
-			System.out.println(clients.size());
+			Server.getState().addClient(cli);
 		}
-	}
-
-	public boolean isLoggedIn(String username) {
-		for (Entry<InetSocketAddress, Client> entry : clients.entrySet()) {
-			Client cli = entry.getValue();
-
-			if (cli.getUsername().equals(username)) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	private void handleJoin(Packet p) {
 		String room = p.getData("room");
-		Client c = clients.get(sender);
+		Client c = Server.getState().getClient(sender);
 		c.joinRoom(room);
 
 		Packet update = Packet.createJoinPacket(c.getUsername(), room, 0, 0);
-		for (Entry<InetSocketAddress, Client> entry : clients.entrySet()) {
-			Client other = entry.getValue();
+		for (Client other : Server.getState().getClients()) {
 			if (!other.isInRoom(room)) {
 				continue;
 			}
@@ -112,43 +97,36 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			ctx.writeAndFlush(createDatagramPacket(p, sender));
 
 			if (!other.getUsername().equals(c.getUsername())) {
-				ctx.writeAndFlush(createDatagramPacket(update, entry.getKey()));
+				ctx.writeAndFlush(createDatagramPacket(update, other.getAddress()));
 			}
 		}
 	}
 
 	private void handleMovement(Packet p) {
-		Client c = clients.get(sender);
-		c.setVelocityX(Float.valueOf(p.getData("vel_x")));
-		c.setVelocityY(Float.valueOf(p.getData("vel_y")));
-		p.addData("user", c.getUsername());
+		Float velX = Float.valueOf(p.getData("vel_x"));
+		Float velY = Float.valueOf(p.getData("vel_y"));
 
-		for (Entry<InetSocketAddress, Client> entry : clients.entrySet()) {
-			Client other = entry.getValue();
-			if (!other.isInRoom(c.getRoom())) {
-				continue;
-			}
-
-			ctx.writeAndFlush(createDatagramPacket(p, other.getAddress()));
+		Client c = Server.getState().getClient(sender);
+		if (c.getY() == 0 && velY > 0.30) {
+			c.setVelocityY(0.8F);
+			c.setVelocityX(3F * velX);
+		} else {
+			c.setVelocityX(velX);
 		}
 	}
 
 	public void handleLeave() {
-		clients.remove(sender);
+		Client cli = Server.getState().getClient(sender);
+		Packet leave = Packet.createLeavePacket(cli.getUsername(), cli.getRoom());
 
-		Client c = clients.get(sender);
-		if (c == null) {
-			return;
-		}
+		Server.getState().removeClient(sender);
 
-		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
-		for (Entry<InetSocketAddress, Client> entry : clients.entrySet()) {
-			Client other = entry.getValue();
-			if (!other.isInRoom(c.getRoom())) {
+		for (Client other : Server.getState().getClients()) {
+			if (!other.isInRoom(cli.getRoom())) {
 				continue;
 			}
 
-			ctx.writeAndFlush(createDatagramPacket(leave, entry.getKey()));
+			ctx.writeAndFlush(createDatagramPacket(leave, other.getAddress()));
 		}
 	}
 }
