@@ -1,10 +1,13 @@
 package com.lovehunterx;
 
 import java.net.InetSocketAddress;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -52,7 +55,25 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "disconnect":
 			handleLeave();
 			break;
+		case "set_furniture":
+			handleSetFurniture(p);
+			break;
+
 		}
+	}
+
+	private void handleSetFurniture(Packet p) {
+		Client client = Server.getState().getClient(sender);
+		boolean success = Server.db.setFurniture(p.getData("x"), p.getData("y"), p.getData("uid"), p.getData("type"), client.getUsername());
+		for(Client other : Server.getState().getClients()) {
+			if(!other.isInRoom(client.getRoom())) {
+				continue;
+			}
+			DatagramPacket dPacket = createDatagramPacket(p,other.getAddress());
+			ctx.writeAndFlush(dPacket);
+		}
+		
+		
 	}
 
 	private void handleRegistration(Packet p) {
@@ -102,6 +123,17 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				ctx.writeAndFlush(createDatagramPacket(update, other.getAddress()));
 			}
 		}
+		ResultSet userInventory = Server.db.getInventory(c.getUsername());
+		try {
+			while(userInventory.next()) {
+				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"), userInventory.getInt("amount"));
+				ctx.writeAndFlush(createDatagramPacket(inventoryPacket, sender));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 
 	private void handleMovement(Packet p) {
