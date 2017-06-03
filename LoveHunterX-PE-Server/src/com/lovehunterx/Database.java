@@ -50,7 +50,7 @@ public class Database {
 		}
 	}
 	
-	public boolean setFurniture(String x, String y, String uid, String type, String user) {
+	public String setFurniture(String x, String y, String uid, String type, String user) {
 		try {
 			PreparedStatement checkStatement = con.prepareStatement("SELECT * FROM furnitures WHERE uid = ?");
 			checkStatement.setInt(1, Integer.valueOf(uid));
@@ -62,14 +62,15 @@ public class Database {
 				updateStatement.setFloat(1, Integer.valueOf(uid));
 				updateStatement.executeUpdate();
 				
-				return true;
+				return uid;
 			} else {
 				PreparedStatement checkStatement2 = con.prepareStatement("SELECT amount FROM inventories WHERE user = ? AND type = ?");
 				checkStatement2.setString(1, user);
 				checkStatement2.setString(2, type);
 				ResultSet rs2 = checkStatement2.executeQuery();
-				int currentAmount = rs2.getInt("amount");
-				if(rs2.next() && currentAmount > 0) {
+
+				Integer currentAmount;
+				if(rs2.next() && (currentAmount = rs2.getInt("amount")) > 0) {
 					PreparedStatement updateStatement = con.prepareStatement("UPDATE inventories SET amount = ? WHERE user = ? AND type = ?");
 					updateStatement.setInt(1, currentAmount - 1);
 					updateStatement.setString(2, user);
@@ -85,16 +86,16 @@ public class Database {
 					
 					PreparedStatement lastRowStatement = con.prepareStatement("SELECT * FROM furnitures ORDER BY uid DESC LIMIT 1");
 					int createdUID = lastRowStatement.executeQuery().getInt("uid");
-					//return string instead of boolean?
+					return Integer.toString(createdUID);
 					
 
 				}
 				
-				return false;
+				return null;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return false;
+			return null;
 		}
 	}
 	

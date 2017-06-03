@@ -64,7 +64,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private void handleSetFurniture(Packet p) {
 		Client client = Server.getState().getClient(sender);
-		boolean success = Server.db.setFurniture(p.getData("x"), p.getData("y"), p.getData("uid"), p.getData("type"), client.getUsername());
+		String uid = Server.db.setFurniture(p.getData("x"), p.getData("y"), p.getData("uid"), p.getData("type"), client.getUsername());
+		p.addData("uid",uid);
 		for(Client other : Server.getState().getClients()) {
 			if(!other.isInRoom(client.getRoom())) {
 				continue;
