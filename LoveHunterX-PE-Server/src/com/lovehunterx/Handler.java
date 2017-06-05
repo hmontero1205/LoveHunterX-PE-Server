@@ -57,6 +57,9 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "update_furniture":
 			handleSetFurniture(p);
 			break;
+		case "remove_furniture":
+			handleRemoveFurniture(p);
+			break;
 
 		}
 	}
@@ -73,6 +76,19 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
 			ctx.writeAndFlush(dPacket);
 		}
+	}
+	
+	private void handleRemoveFurniture(Packet p) {
+		Client client = Server.getState().getClient(sender);
+		Server.db.removeFurniture(p.getData("uid"), p.getData("type"), client.getUsername());
+		for (Client other : Server.getState().getClients()) {
+			if (!other.isInRoom(client.getRoom())) {
+				continue;
+			}
+			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
+			ctx.writeAndFlush(dPacket);
+		}
+		
 	}
 
 	private void handleRegistration(Packet p) {

@@ -130,4 +130,32 @@ public class Database {
 
 		return null;
 	}
+
+	public void removeFurniture(String uid, String type, String name) {
+		try {
+			PreparedStatement removeStatement = con.prepareStatement("DELETE FROM furnitures WHERE uid = ?");
+			removeStatement.setInt(1, Integer.parseInt(uid));
+			removeStatement.executeUpdate();
+			
+			PreparedStatement checkStatement2 = con.prepareStatement("SELECT amount FROM inventories WHERE user = ? AND type = ?");
+			checkStatement2.setString(1, name);
+			checkStatement2.setString(2, type);
+			ResultSet rs2 = checkStatement2.executeQuery();
+
+			Integer currentAmount;
+			if (rs2.next() && (currentAmount = rs2.getInt("amount")) > 0) {
+				PreparedStatement updateStatement = con.prepareStatement("UPDATE inventories SET amount = ? WHERE user = ? AND type = ?");
+				updateStatement.setInt(1, currentAmount + 1);
+				updateStatement.setString(2, name);
+				updateStatement.setString(3, type);
+				updateStatement.executeUpdate();
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
 }
