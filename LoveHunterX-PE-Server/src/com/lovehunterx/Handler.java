@@ -8,7 +8,6 @@ import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -55,7 +54,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "disconnect":
 			handleLeave();
 			break;
-		case "set_furniture":
+		case "update_furniture":
 			handleSetFurniture(p);
 			break;
 
@@ -64,17 +63,16 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private void handleSetFurniture(Packet p) {
 		Client client = Server.getState().getClient(sender);
-		String uid = Server.db.setFurniture(p.getData("x"), p.getData("y"), p.getData("uid"), p.getData("type"), client.getUsername());
-		p.addData("uid",uid);
-		for(Client other : Server.getState().getClients()) {
-			if(!other.isInRoom(client.getRoom())) {
+		String uid = Server.db.setFurniture(p.getData("x"), p.getData("y"), p.getData("uid"), p.getData("type"),
+				client.getUsername());
+		p.addData("uid", uid);
+		for (Client other : Server.getState().getClients()) {
+			if (!other.isInRoom(client.getRoom())) {
 				continue;
 			}
-			DatagramPacket dPacket = createDatagramPacket(p,other.getAddress());
+			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
 			ctx.writeAndFlush(dPacket);
 		}
-		
-		
 	}
 
 	private void handleRegistration(Packet p) {
@@ -107,6 +105,9 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		String room = p.getData("room");
 		c.joinRoom(room);
 		
+		updateInventory(sender);
+		updateFurniture(sender);
+		
 		Packet update = Packet.createJoinPacket(c.getUsername(), room, 0, 0);
 		for (Client other : Server.getState().getClients()) {
 			if (!other.isInRoom(room)) {
@@ -124,17 +125,33 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				ctx.writeAndFlush(createDatagramPacket(update, other.getAddress()));
 			}
 		}
+	}
+
+	public void updateInventory(InetSocketAddress client) {
+		Client c = Server.getState().getClient(client);
 		ResultSet userInventory = Server.db.getInventory(c.getUsername());
 		try {
-			while(userInventory.next()) {
-				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"), userInventory.getInt("amount"));
-				ctx.writeAndFlush(createDatagramPacket(inventoryPacket, sender));
+			while (userInventory.next()) {
+				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"),
+						userInventory.getInt("amount"));
+				ctx.writeAndFlush(createDatagramPacket(inventoryPacket, client));
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+	}
+	
+	public void updateFurniture(InetSocketAddress client) {
+		Client c = Server.getState().getClient(client);
+		ResultSet furniture = Server.db.getFurniture(c.getRoom());
+		try {
+			while (furniture.next()) {
+				Packet furniturePacket = Packet.createFurniturePacket(furniture.getInt(2), furniture.getFloat(4), furniture.getFloat(5), furniture.getString(3)); 
+				ctx.writeAndFlush(createDatagramPacket(furniturePacket, client));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void handleMovement(Packet p) {
@@ -142,10 +159,10 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		if (c == null) {
 			return;
 		}
-		
+
 		float velX = p.getFloat("vel_x");
 		float velY = p.getFloat("vel_y");
-		
+
 		if (c.getY() == 0 && velY > 0.30) {
 			c.setVelocityY(0.8F);
 			c.setVelocityX(3F * velX);

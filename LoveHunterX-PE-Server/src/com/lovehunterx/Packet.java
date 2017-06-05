@@ -82,6 +82,15 @@ public class Packet {
 		inventoryData.put("amount", Integer.toString(amount));
 		return new Packet("update_inventory", inventoryData);
 	}
+	
+	public static Packet createFurniturePacket(int uid, float x, float y, String type) {
+		HashMap<String, String> furnitureData = new HashMap<String, String>();
+		furnitureData.put("uid", String.valueOf(uid));
+		furnitureData.put("x", String.valueOf(x));
+		furnitureData.put("y", String.valueOf(y));
+		furnitureData.put("type", type);
+		return new Packet("update_furniture", furnitureData);
+	}
 
 	public String toJSON() {
 		HashMap<String, Object> obj = new HashMap<String, Object>();

@@ -10,8 +10,8 @@ public class Database {
 	public Database() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			//con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
-			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
+			con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
+			// con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -59,7 +59,7 @@ public class Database {
 				PreparedStatement updateStatement = con.prepareStatement("UPDATE furnitures SET x = ?, y = ? WHERE uid = ?");
 				updateStatement.setFloat(1, Float.valueOf(x));
 				updateStatement.setFloat(2, Float.valueOf(y));
-				updateStatement.setFloat(1, Integer.valueOf(uid));
+				updateStatement.setFloat(3, Integer.valueOf(uid));
 				updateStatement.executeUpdate();
 				
 				return uid;
@@ -70,7 +70,7 @@ public class Database {
 				ResultSet rs2 = checkStatement2.executeQuery();
 
 				Integer currentAmount;
-				if(rs2.next() && (currentAmount = rs2.getInt("amount")) > 0) {
+				if (rs2.next() && (currentAmount = rs2.getInt("amount")) > 0) {
 					PreparedStatement updateStatement = con.prepareStatement("UPDATE inventories SET amount = ? WHERE user = ? AND type = ?");
 					updateStatement.setInt(1, currentAmount - 1);
 					updateStatement.setString(2, user);
@@ -85,10 +85,12 @@ public class Database {
 					insertStatement.executeUpdate();
 					
 					PreparedStatement lastRowStatement = con.prepareStatement("SELECT * FROM furnitures ORDER BY uid DESC LIMIT 1");
-					int createdUID = lastRowStatement.executeQuery().getInt("uid");
-					return Integer.toString(createdUID);
-					
+					ResultSet rs3 = lastRowStatement.executeQuery();
 
+					if (rs3.next()) {
+						int createdUID = rs3.getInt("uid");
+						return Integer.toString(createdUID);
+					}
 				}
 				
 				return null;
@@ -98,18 +100,28 @@ public class Database {
 			return null;
 		}
 	}
-	
+
 	public ResultSet getInventory(String user) {
-		PreparedStatement getStatement;
 		try {
-			getStatement = con.prepareStatement("SELECT * FROM inventories WHERE user = ?");
+			PreparedStatement getStatement = con.prepareStatement("SELECT * FROM inventories WHERE user = ?");
 			getStatement.setString(1, user);
 			return getStatement.executeQuery();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
+		return null;
+	}
+	
+	public ResultSet getFurniture(String room) {
+		try {
+			PreparedStatement getStatement = con.prepareStatement("SELECT * FROM furnitures WHERE room = ?");
+			getStatement.setString(1, room);
+			return getStatement.executeQuery();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
 		return null;
 	}
 }
