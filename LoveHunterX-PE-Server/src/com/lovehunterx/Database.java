@@ -42,6 +42,12 @@ public class Database {
 				insStatement.setString(1, u);
 				insStatement.setString(2, p);
 				insStatement.executeUpdate();
+
+				PreparedStatement insStatement2 = con.prepareStatement("INSERT INTO inventories (user, type, amount) VALUES (?, ?, ?)");
+				insStatement2.setString(1, u);
+				insStatement2.setString(2, "Love Sofa");
+				insStatement2.setInt(3, 3);
+				insStatement2.executeUpdate();
 				return true;
 			}
 		} catch (SQLException e) {
