@@ -76,10 +76,11 @@ public class Packet {
 		return new Packet("leave", leaveData);
 	}
 	
-	public static Packet createInventoryPacket(String type, int amount) {
+	public static Packet createInventoryPacket(String type, int amount, String user) {
 		HashMap<String, String> inventoryData = new HashMap<String, String>();
 		inventoryData.put("type", type);
 		inventoryData.put("amount", Integer.toString(amount));
+		inventoryData.put("user", user);
 		return new Packet("update_inventory", inventoryData);
 	}
 	

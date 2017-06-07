@@ -148,8 +148,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		ResultSet userInventory = Server.db.getInventory(c.getUsername());
 		try {
 			while (userInventory.next()) {
-				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"),
-						userInventory.getInt("amount"));
+				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"), userInventory.getInt("amount"), c.getUsername());
 				ctx.writeAndFlush(createDatagramPacket(inventoryPacket, client));
 			}
 		} catch (SQLException e) {
