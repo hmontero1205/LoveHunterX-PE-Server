@@ -75,14 +75,14 @@ public class Packet {
 		leaveData.put("room", room);
 		return new Packet("leave", leaveData);
 	}
-	
+
 	public static Packet createInventoryPacket(String type, int amount) {
 		HashMap<String, String> inventoryData = new HashMap<String, String>();
 		inventoryData.put("type", type);
 		inventoryData.put("amount", Integer.toString(amount));
 		return new Packet("update_inventory", inventoryData);
 	}
-	
+
 	public static Packet createFurniturePacket(int uid, float x, float y, String type) {
 		HashMap<String, String> furnitureData = new HashMap<String, String>();
 		furnitureData.put("uid", String.valueOf(uid));

@@ -38,9 +38,10 @@ public class Database {
 			if (rs.next())
 				return false;
 			else {
-				PreparedStatement insStatement = con.prepareStatement("INSERT INTO users (name, pass) VALUES (?, ?)");
+				PreparedStatement insStatement = con.prepareStatement("INSERT INTO users (name, pass, sprite_number) VALUES (?, ?, ?)");
 				insStatement.setString(1, u);
 				insStatement.setString(2, p);
+				insStatement.setInt(3, 0);
 				insStatement.executeUpdate();
 
 				PreparedStatement insStatement2 = con.prepareStatement("INSERT INTO inventories (user, type, amount) VALUES (?, ?, ?)");
@@ -56,6 +57,17 @@ public class Database {
 		}
 	}
 	
+	public void changeSprite(String user, int sprite) {
+		try {
+			PreparedStatement ps = con.prepareStatement("UPDATE users SET sprite_number = ? WHERE name = ?");
+			ps.setInt(1, sprite);
+			ps.setString(2, user);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public String setFurniture(String x, String y, String uid, String type, String user) {
 		try {
 			PreparedStatement checkStatement = con.prepareStatement("SELECT * FROM furnitures WHERE uid = ?");

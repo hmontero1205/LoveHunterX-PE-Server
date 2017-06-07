@@ -28,6 +28,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		this.sender = packet.sender();
 
 		String message = packet.content().toString(CharsetUtil.US_ASCII);
+		System.out.println(message);
 		try {
 			interpretInput(ctx, message);
 		} catch (ParseException e) {
@@ -51,6 +52,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "move":
 			handleMovement(p);
 			break;
+		case "choose_sprite":
+			handleChooseSprite(p);
 		case "disconnect":
 			handleLeave();
 			break;
@@ -60,7 +63,6 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "remove_furniture":
 			handleRemoveFurniture(p);
 			break;
-
 		}
 	}
 
@@ -85,10 +87,10 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			if (!other.isInRoom(client.getRoom())) {
 				continue;
 			}
+			
 			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
 			ctx.writeAndFlush(dPacket);
 		}
-		
 	}
 
 	private void handleRegistration(Packet p) {
@@ -156,7 +158,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void updateFurniture(InetSocketAddress client) {
 		Client c = Server.getState().getClient(client);
 		ResultSet furniture = Server.db.getFurniture(c.getRoom());
@@ -186,14 +188,20 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			c.setVelocityX(velX);
 		}
 	}
+	
+	private void handleChooseSprite(Packet p) {
+		
+	}
 
 	public void handleLeave() {
-		Client c = Server.getState().getClient(sender);
+		disconnect(sender);
+	}
+
+	public void disconnect(InetSocketAddress cli) {
+		Client c = Server.getState().getClient(cli);
 		if (c == null) {
 			return;
 		}
-
-		Server.getState().removeClient(sender);
 
 		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
 		for (Client other : Server.getState().getClients()) {
@@ -203,5 +211,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 			ctx.writeAndFlush(createDatagramPacket(leave, other.getAddress()));
 		}
+		
+		Server.getState().removeClient(cli);
 	}
 }

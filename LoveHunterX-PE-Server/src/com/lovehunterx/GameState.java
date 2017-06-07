@@ -75,7 +75,7 @@ public class GameState {
 					if (!cli.isInRoom(other.getRoom())) {
 						continue;
 					}
-					
+
 					DatagramPacket packet = Handler.createDatagramPacket(delta, other.getAddress());
 					Server.send(packet);
 				}
