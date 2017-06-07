@@ -3,12 +3,15 @@ package com.lovehunterx;
 import java.net.InetSocketAddress;
 
 public class Client {
+	private static final short AFK_TIMEOUT = 300;
+	
 	private InetSocketAddress addr;
 	private String username;
 	private String room;
 	private float x, y;
 	private float velX, velY;
 	private byte delta = 0b0000;
+	private int afk;
 
 	public Client(InetSocketAddress addr) {
 		this.addr = addr;
@@ -39,16 +42,27 @@ public class Client {
 	}
 
 	public void update(float delta) {
+		if (afk < AFK_TIMEOUT) {
+			afk++;
+		}
+		
 		this.setX(this.getX() + this.getVelocityX() * 100 * delta);
 		this.setY(Math.max(0, this.getY() + this.getVelocityY() * 200 * delta));
 		this.setVelocityY(this.y != 0 ? this.getVelocityY() - (2F * delta) : 0);
 	}
 
+	public void resetAFK() {
+		afk = 0;
+	}
+
+	public boolean isAFK() {
+		return afk == AFK_TIMEOUT;
+	}
+
 	public Packet getDeltaUpdate() {
 		Packet packet = new Packet("move");
 		packet.addData("user", username);
-		packet.addData("room", room);
-
+		
 		if (hasDelta(3)) {
 			packet.addData("x", String.valueOf(x));
 		}

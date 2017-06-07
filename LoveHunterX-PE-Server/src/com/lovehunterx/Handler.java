@@ -15,7 +15,6 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.CharsetUtil;
 
 public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
-	private ChannelHandlerContext ctx;
 	private InetSocketAddress sender;
 
 	public static DatagramPacket createDatagramPacket(Packet p, InetSocketAddress addr) {
@@ -24,7 +23,6 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
-		this.ctx = ctx;
 		this.sender = packet.sender();
 
 		String message = packet.content().toString(CharsetUtil.US_ASCII);
@@ -76,7 +74,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				continue;
 			}
 			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
-			ctx.writeAndFlush(dPacket);
+			Server.send(dPacket);
 		}
 	}
 	
@@ -89,14 +87,14 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			}
 			
 			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
-			ctx.writeAndFlush(dPacket);
+			Server.send(dPacket);
 		}
 	}
 
 	private void handleRegistration(Packet p) {
 		boolean success = Server.db.register(p.getData("user"), p.getData("pass"));
 		Packet regPacket = Packet.createRegPacket(success);
-		ctx.writeAndFlush(createDatagramPacket(regPacket, sender));
+		Server.send(createDatagramPacket(regPacket, sender));
 	}
 
 	private void handleAuthentication(Packet p) {
@@ -104,7 +102,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				&& !Server.getState().isLoggedIn(p.getData("user"));
 
 		Packet authPacket = Packet.createAuthPacket(success);
-		ctx.writeAndFlush(createDatagramPacket(authPacket, sender));
+		Server.send(createDatagramPacket(authPacket, sender));
 
 		if (success) {
 			Client cli = new Client(sender);
@@ -137,10 +135,10 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			p.addData("y", String.valueOf(other.getY()));
 			p.addData("vel_x", String.valueOf(other.getVelocityX()));
 			p.addData("vel_y", String.valueOf(other.getVelocityY()));
-			ctx.writeAndFlush(createDatagramPacket(p, sender));
+			Server.send(createDatagramPacket(p, sender));
 
 			if (!other.getUsername().equals(c.getUsername())) {
-				ctx.writeAndFlush(createDatagramPacket(update, other.getAddress()));
+				Server.send(createDatagramPacket(update, other.getAddress()));
 			}
 		}
 	}
@@ -151,7 +149,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		try {
 			while (userInventory.next()) {
 				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"), userInventory.getInt("amount"), c.getUsername());
-				ctx.writeAndFlush(createDatagramPacket(inventoryPacket, client));
+				Server.send(createDatagramPacket(inventoryPacket, client));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -164,7 +162,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		try {
 			while (furniture.next()) {
 				Packet furniturePacket = Packet.createFurniturePacket(furniture.getInt(2), furniture.getFloat(4), furniture.getFloat(5), furniture.getString(3)); 
-				ctx.writeAndFlush(createDatagramPacket(furniturePacket, client));
+				Server.send(createDatagramPacket(furniturePacket, client));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -177,6 +175,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			return;
 		}
 
+		c.resetAFK();
+
 		float velX = p.getFloat("vel_x");
 		float velY = p.getFloat("vel_y");
 
@@ -187,30 +187,14 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			c.setVelocityX(velX);
 		}
 	}
-	
+
 	private void handleChooseSprite(Packet p) {
 	
 	}
 
 	public void handleLeave() {
-		disconnect(sender);
+		Server.disconnect(sender);
+		Server.getState().removeClient(sender);
 	}
 
-	public void disconnect(InetSocketAddress cli) {
-		Client c = Server.getState().getClient(cli);
-		if (c == null) {
-			return;
-		}
-
-		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
-		for (Client other : Server.getState().getClients()) {
-			if (!other.isInRoom(c.getRoom())) {
-				continue;
-			}
-
-			ctx.writeAndFlush(createDatagramPacket(leave, other.getAddress()));
-		}
-		
-		Server.getState().removeClient(cli);
-	}
 }

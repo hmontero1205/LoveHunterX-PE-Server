@@ -1,5 +1,7 @@
 package com.lovehunterx;
 
+import java.net.InetSocketAddress;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -35,6 +37,22 @@ public class Server {
 	
 	public static void send(DatagramPacket packet) {
 		connection.writeAndFlush(packet);
+	}
+	
+	public static void disconnect(InetSocketAddress cli) {
+		Client c = Server.getState().getClient(cli);
+		if (c == null) {
+			return;
+		}
+
+		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
+		for (Client other : Server.getState().getClients()) {
+			if (!other.isInRoom(c.getRoom())) {
+				continue;
+			}
+
+			Server.send(Handler.createDatagramPacket(leave, other.getAddress()));
+		}
 	}
 
 	public static void main(String[] args) {

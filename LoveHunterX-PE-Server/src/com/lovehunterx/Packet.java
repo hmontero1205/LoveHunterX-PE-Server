@@ -75,7 +75,7 @@ public class Packet {
 		leaveData.put("room", room);
 		return new Packet("leave", leaveData);
 	}
-	
+
 	public static Packet createInventoryPacket(String type, int amount, String user) {
 		HashMap<String, String> inventoryData = new HashMap<String, String>();
 		inventoryData.put("type", type);

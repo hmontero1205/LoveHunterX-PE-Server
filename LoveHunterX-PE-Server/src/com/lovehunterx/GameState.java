@@ -2,6 +2,7 @@ package com.lovehunterx;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.netty.channel.socket.DatagramPacket;
@@ -65,7 +66,14 @@ public class GameState {
 		}
 
 		public void dispatch() {
-			for (Client cli : getClients()) {
+			Iterator<Client> it = getClients().iterator();
+			while (it.hasNext()) {
+				Client cli = it.next();
+				if (cli.isAFK()) {
+					Server.disconnect(cli.getAddress());
+					it.remove();
+				}
+
 				Packet delta = cli.getDeltaUpdate();
 				if (delta == null) {
 					continue;
