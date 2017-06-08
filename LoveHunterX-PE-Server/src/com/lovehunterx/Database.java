@@ -154,8 +154,9 @@ public class Database {
 			checkStatement2.setString(2, type);
 			ResultSet rs2 = checkStatement2.executeQuery();
 
-			Integer currentAmount;
-			if (rs2.next() && (currentAmount = rs2.getInt("amount")) > 0) {
+			
+			if (rs2.next()) {
+				Integer currentAmount = rs2.getInt("amount");
 				PreparedStatement updateStatement = con.prepareStatement("UPDATE inventories SET amount = ? WHERE user = ? AND type = ?");
 				updateStatement.setInt(1, currentAmount + 1);
 				updateStatement.setString(2, name);
@@ -164,10 +165,7 @@ public class Database {
 			}
 			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
 }
