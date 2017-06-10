@@ -49,6 +49,13 @@ public class Database {
 				insStatement2.setString(2, "Love Sofa");
 				insStatement2.setInt(3, 3);
 				insStatement2.executeUpdate();
+				
+				PreparedStatement insStatement3 = con.prepareStatement("INSERT INTO furnitures (room, type, x, y) VALUES (?, ?, ?, ?)");
+				insStatement3.setString(1, u);
+				insStatement3.setString(2, "Door");
+				insStatement3.setInt(3, 50);
+				insStatement3.setInt(4, 115);
+				insStatement3.executeUpdate();
 				return true;
 			}
 		} catch (SQLException e) {
