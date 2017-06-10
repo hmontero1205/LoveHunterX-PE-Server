@@ -17,16 +17,11 @@ import io.netty.util.CharsetUtil;
 public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 	private InetSocketAddress sender;
 
-	public static DatagramPacket createDatagramPacket(Packet p, InetSocketAddress addr) {
-		return new DatagramPacket(Unpooled.copiedBuffer(p.toJSON(), CharsetUtil.UTF_8), addr);
-	}
-
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
 		this.sender = packet.sender();
 
 		String message = packet.content().toString(CharsetUtil.US_ASCII);
-		System.out.println(message);
 		try {
 			interpretInput(ctx, message);
 		} catch (ParseException e) {
@@ -38,27 +33,41 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		JSONObject obj = (JSONObject) parser.parse(message);
 		Packet p = new Packet(obj);
 		switch (p.getAction()) {
+		case "alive":
+			System.out.println(message);
+			handleAlive();
+			break;
 		case "auth":
+			System.out.println(message);
 			handleAuthentication(p);
 			break;
 		case "reg":
+			System.out.println(message);
 			handleRegistration(p);
 			break;
 		case "join":
+			System.out.println(message);
 			handleJoin(p);
+			break;
+		case "chat":
+			handleChat(p);
 			break;
 		case "move":
 			handleMovement(p);
 			break;
 		case "choose_sprite":
+			System.out.println(message);
 			handleChooseSprite(p);
 		case "disconnect":
+			System.out.println(message);
 			handleLeave();
 			break;
 		case "update_furniture":
+			System.out.println(message);
 			handleSetFurniture(p);
 			break;
 		case "remove_furniture":
+			System.out.println(message);
 			handleRemoveFurniture(p);
 			break;
 		}
@@ -73,8 +82,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			if (!other.isInRoom(client.getRoom())) {
 				continue;
 			}
-			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
-			Server.send(dPacket);
+
+			Server.send(p, other.getAddress());
 		}
 	}
 	
@@ -85,16 +94,15 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			if (!other.isInRoom(client.getRoom())) {
 				continue;
 			}
-			
-			DatagramPacket dPacket = createDatagramPacket(p, other.getAddress());
-			Server.send(dPacket);
+
+			Server.send(p, other.getAddress());
 		}
 	}
 
 	private void handleRegistration(Packet p) {
 		boolean success = Server.db.register(p.getData("user"), p.getData("pass"));
 		Packet regPacket = Packet.createRegPacket(success);
-		Server.send(createDatagramPacket(regPacket, sender));
+		Server.send(regPacket, sender);
 	}
 
 	private void handleAuthentication(Packet p) {
@@ -102,7 +110,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				&& !Server.getState().isLoggedIn(p.getData("user"));
 
 		Packet authPacket = Packet.createAuthPacket(success);
-		Server.send(createDatagramPacket(authPacket, sender));
+		Server.send(authPacket, sender);
 
 		if (success) {
 			Client cli = new Client(sender);
@@ -124,9 +132,41 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		updateInventory(sender);
 		updateFurniture(sender);
 		
-		Packet update = Packet.createJoinPacket(c.getUsername(), room, 0, 0);
+		if (room.equals("Hallway")) {
+			sendDoors(c);
+		} else {
+			updatePlayers(c, p);
+		}
+		
+		p.addData("user", c.getUsername());
+		p.addData("x", "0");
+		p.addData("y", "0");
+		Server.send(p, sender);
+	}
+	
+	public void sendDoors(Client c) {
+		Packet door = Packet.createFurniturePacket(-1, 50, 115, "Door");
+		door.addData("destination", c.getUsername());
+		Server.send(door, sender);
+		
+		int uid = -1, x = 50;
 		for (Client other : Server.getState().getClients()) {
-			if (!other.isInRoom(room)) {
+			if (other.getUsername().equals(c.getUsername())) {
+				continue;
+			}
+			
+			door.addData("destination", other.getUsername());
+			door.addData("uid", String.valueOf(--uid));
+			door.addData("x", String.valueOf(x += 200));
+			Server.send(door, sender);
+		}
+	}
+
+	public void updatePlayers(Client c, Packet p) {
+		Packet update = Packet.createJoinPacket(c.getUsername(), c.getRoom(), 0, 0);
+
+		for (Client other : Server.getState().getClients()) {
+			if (!other.isInRoom(c.getRoom()) || other.getUsername().equals(c.getUsername())) {
 				continue;
 			}
 
@@ -135,11 +175,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			p.addData("y", String.valueOf(other.getY()));
 			p.addData("vel_x", String.valueOf(other.getVelocityX()));
 			p.addData("vel_y", String.valueOf(other.getVelocityY()));
-			Server.send(createDatagramPacket(p, sender));
-
-			if (!other.getUsername().equals(c.getUsername())) {
-				Server.send(createDatagramPacket(update, other.getAddress()));
-			}
+			Server.send(p, sender);
+			Server.send(update, other.getAddress());
 		}
 	}
 
@@ -149,7 +186,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		try {
 			while (userInventory.next()) {
 				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"), userInventory.getInt("amount"), c.getUsername());
-				Server.send(createDatagramPacket(inventoryPacket, client));
+				Server.send(inventoryPacket, client);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -162,7 +199,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		try {
 			while (furniture.next()) {
 				Packet furniturePacket = Packet.createFurniturePacket(furniture.getInt(2), furniture.getFloat(4), furniture.getFloat(5), furniture.getString(3)); 
-				Server.send(createDatagramPacket(furniturePacket, client));
+				Server.send(furniturePacket, client);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -187,14 +224,38 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			c.setVelocityX(velX);
 		}
 	}
+	
+	private void handleChat(Packet p) {
+		Client c = Server.getState().getClient(sender);
+		if (c == null) {
+			return;
+		}
+
+		p.addData("user", c.getUsername());
+		for (Client other : Server.getState().getClients()) {
+			if (!c.isInRoom(other.getRoom()) && !(c.isInRoom("Hallway") && other.getUsername().equals(c.getUsername()))) {
+				continue;
+			}
+			
+			Server.send(p, other.getAddress());
+		}
+	}
+	
+	private void handleAlive() {
+		Client c = Server.getState().getClient(sender);
+		if (c == null) {
+			return;
+		}
+
+		c.resetAFK();
+	}
 
 	private void handleChooseSprite(Packet p) {
-	
+		
 	}
 
 	public void handleLeave() {
 		Server.disconnect(sender);
 		Server.getState().removeClient(sender);
 	}
-
 }

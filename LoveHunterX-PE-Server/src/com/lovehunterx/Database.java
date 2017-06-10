@@ -56,7 +56,7 @@ public class Database {
 			return false;
 		}
 	}
-	
+
 	public void changeSprite(String user, int sprite) {
 		try {
 			PreparedStatement ps = con.prepareStatement("UPDATE users SET sprite_number = ? WHERE name = ?");
@@ -130,7 +130,7 @@ public class Database {
 
 		return null;
 	}
-	
+
 	public ResultSet getFurniture(String room) {
 		try {
 			PreparedStatement getStatement = con.prepareStatement("SELECT * FROM furnitures WHERE room = ?");
@@ -148,22 +148,22 @@ public class Database {
 			PreparedStatement removeStatement = con.prepareStatement("DELETE FROM furnitures WHERE uid = ?");
 			removeStatement.setInt(1, Integer.parseInt(uid));
 			removeStatement.executeUpdate();
-			
+
 			PreparedStatement checkStatement2 = con.prepareStatement("SELECT amount FROM inventories WHERE user = ? AND type = ?");
 			checkStatement2.setString(1, name);
 			checkStatement2.setString(2, type);
 			ResultSet rs2 = checkStatement2.executeQuery();
 
-			
 			if (rs2.next()) {
 				Integer currentAmount = rs2.getInt("amount");
+				System.out.println(currentAmount);
+				
 				PreparedStatement updateStatement = con.prepareStatement("UPDATE inventories SET amount = ? WHERE user = ? AND type = ?");
 				updateStatement.setInt(1, currentAmount + 1);
 				updateStatement.setString(2, name);
 				updateStatement.setString(3, type);
 				updateStatement.executeUpdate();
 			}
-			
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

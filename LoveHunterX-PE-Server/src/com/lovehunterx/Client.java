@@ -31,6 +31,10 @@ public class Client {
 
 	public void joinRoom(String room) {
 		this.room = room;
+		setX(0);
+		setY(0);
+		setVelocityX(0);
+		setVelocityY(0);
 	}
 
 	public String getRoom() {

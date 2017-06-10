@@ -78,14 +78,13 @@ public class GameState {
 				if (delta == null) {
 					continue;
 				}
-				
+
 				for (Client other : getClients()) {
-					if (!cli.isInRoom(other.getRoom())) {
+					if (!cli.isInRoom(other.getRoom()) && !(cli.isInRoom("Hallway") && other.getUsername().equals(cli.getUsername()))) {
 						continue;
 					}
 
-					DatagramPacket packet = Handler.createDatagramPacket(delta, other.getAddress());
-					Server.send(packet);
+					Server.send(delta, other.getAddress());
 				}
 				
 				cli.clearDelta();

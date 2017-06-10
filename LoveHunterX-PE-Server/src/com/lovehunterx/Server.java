@@ -3,12 +3,14 @@ package com.lovehunterx;
 import java.net.InetSocketAddress;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.CharsetUtil;
 
 public class Server {
 	private static final int PORT = 8080;
@@ -34,9 +36,13 @@ public class Server {
 	public static GameState getState() {
 		return state;
 	}
-	
-	public static void send(DatagramPacket packet) {
-		connection.writeAndFlush(packet);
+
+	private static DatagramPacket createDatagramPacket(Packet p, InetSocketAddress addr) {
+		return new DatagramPacket(Unpooled.copiedBuffer(p.toJSON(), CharsetUtil.UTF_8), addr);
+	}
+
+	public static void send(Packet p, InetSocketAddress sender) {
+		connection.writeAndFlush(createDatagramPacket(p, sender));
 	}
 	
 	public static void disconnect(InetSocketAddress cli) {
@@ -51,7 +57,7 @@ public class Server {
 				continue;
 			}
 
-			Server.send(Handler.createDatagramPacket(leave, other.getAddress()));
+			Server.send(leave, other.getAddress());
 		}
 	}
 
