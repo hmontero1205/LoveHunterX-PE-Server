@@ -10,8 +10,8 @@ public class Database {
 	public Database() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			//con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
-			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
+			con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
+			//con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -227,7 +227,7 @@ public class Database {
 				insertStatement.setString(1, user);
 				insertStatement.setString(2, type);
 				insertStatement.setInt(3, 1);
-				insertStatement.executeQuery();
+				insertStatement.executeUpdate();
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
