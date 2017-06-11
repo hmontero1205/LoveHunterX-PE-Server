@@ -70,6 +70,10 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			System.out.println(message);
 			handleRemoveFurniture(p);
 			break;
+		case "status":
+			System.out.println(message);
+			handleStatusCheck();
+			break;
 		}
 	}
 
@@ -125,10 +129,11 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		if (c == null) {
 			return;
 		}
+		Server.disconnect(sender);
 
 		String room = p.getData("room");
 		c.joinRoom(room);
-		
+
 		updateInventory(sender);
 		updateFurniture(sender);
 		
@@ -248,6 +253,15 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		}
 
 		c.resetAFK();
+	}
+	
+	private void handleStatusCheck() {
+		Client c = Server.getState().getClient(sender);
+		
+		Packet p = new Packet("status");
+		p.addData("state", c == null ? "false" : "true");
+		
+		Server.send(p, sender);
 	}
 
 	private void handleChooseSprite(Packet p) {

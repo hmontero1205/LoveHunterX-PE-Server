@@ -53,7 +53,7 @@ public class Server {
 
 		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
 		for (Client other : Server.getState().getClients()) {
-			if (!other.isInRoom(c.getRoom())) {
+			if (!other.isInRoom(c.getRoom()) || other.getUsername().equals(c.getUsername())) {
 				continue;
 			}
 

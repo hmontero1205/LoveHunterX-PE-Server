@@ -70,6 +70,7 @@ public class GameState {
 			while (it.hasNext()) {
 				Client cli = it.next();
 				if (cli.isAFK()) {
+					System.out.println(cli.getUsername() + " has dc'ed from afk");
 					Server.disconnect(cli.getAddress());
 					it.remove();
 				}
