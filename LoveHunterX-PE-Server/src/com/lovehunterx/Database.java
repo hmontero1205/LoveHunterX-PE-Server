@@ -10,8 +10,8 @@ public class Database {
 	public Database() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
-			//con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
+			//con = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
+			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/hans", "root", "");
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -38,10 +38,11 @@ public class Database {
 			if (rs.next())
 				return false;
 			else {
-				PreparedStatement insStatement = con.prepareStatement("INSERT INTO users (name, pass, sprite_number) VALUES (?, ?, ?)");
+				PreparedStatement insStatement = con.prepareStatement("INSERT INTO users (name, pass, sprite_number, money) VALUES (?, ?, ?, ?)");
 				insStatement.setString(1, u);
 				insStatement.setString(2, p);
 				insStatement.setInt(3, 0);
+				insStatement.setDouble(4, 100.00);
 				insStatement.executeUpdate();
 
 				PreparedStatement insStatement2 = con.prepareStatement("INSERT INTO inventories (user, type, amount) VALUES (?, ?, ?)");
@@ -174,5 +175,65 @@ public class Database {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public double getMoney(String name) {
+		try {
+			PreparedStatement selectStatement = con.prepareStatement("SELECT money FROM users WHERE name = ?");
+			selectStatement.setString(1, name);
+			ResultSet rs = selectStatement.executeQuery();
+			
+			if(rs.next())
+				return rs.getDouble("money");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return 0;
+		
+	}
+
+	public void updateMoney(String user, String money) {
+		try {
+			PreparedStatement upStatement = con.prepareStatement("UPDATE users SET money = ? WHERE name = ?");
+			upStatement.setDouble(1, Double.parseDouble(money));
+			upStatement.setString(2, user);
+			upStatement.executeUpdate();
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+
+	public void addToInventory(String user, String type) {
+		try {
+			PreparedStatement selectStatement = con.prepareStatement("SELECT * FROM inventories WHERE user = ? AND type = ?");
+			selectStatement.setString(1, user);
+			selectStatement.setString(2, type);
+			ResultSet rs = selectStatement.executeQuery();
+			if(rs.next()) {
+				int amount = rs.getInt("amount");
+				PreparedStatement updateStatement = con.prepareStatement("UPDATE inventories SET amount = ? WHERE user = ? and type = ?");
+				updateStatement.setInt(1, amount + 1);
+				updateStatement.setString(2, user);
+				updateStatement.setString(3, type);
+				updateStatement.executeUpdate();
+			} else {
+				PreparedStatement insertStatement = con.prepareStatement("INSERT INTO inventories (user, type, amount) VALUES (?, ?, ?)");
+				insertStatement.setString(1, user);
+				insertStatement.setString(2, type);
+				insertStatement.setInt(3, 1);
+				insertStatement.executeQuery();
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 }

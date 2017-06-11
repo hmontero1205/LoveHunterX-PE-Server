@@ -69,12 +69,35 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "remove_furniture":
 			System.out.println(message);
 			handleRemoveFurniture(p);
+			break;		
+		case "get_money":
+			System.out.println(message);
+			handleGetMoney(p);
+			break;
+		case "purchase":
+			System.out.println(message);
+			handlePurchase(p);
 			break;
 		case "status":
 			System.out.println(message);
 			handleStatusCheck();
 			break;
 		}
+	}
+
+	private void handlePurchase(Packet p) {
+		Server.db.updateMoney(p.getData("user"),p.getData("money"));
+		Server.db.addToInventory(p.getData("user"), p.getData("type"));
+		Server.send(p, sender);
+		
+	}
+
+	private void handleGetMoney(Packet p) {
+		double money = Server.db.getMoney(p.getData("user"));
+		p.addData("money", Double.toString(money));
+		Server.send(p, sender);
+		
+		
 	}
 
 	private void handleSetFurniture(Packet p) {
