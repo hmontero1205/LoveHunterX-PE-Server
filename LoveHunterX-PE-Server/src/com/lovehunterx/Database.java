@@ -67,13 +67,30 @@ public class Database {
 
 	public void changeSprite(String user, int sprite) {
 		try {
-			PreparedStatement ps = con.prepareStatement("UPDATE users SET sprite_number = ? WHERE name = ?");
+			PreparedStatement ps = con.prepareStatement("UPDATE users SET sprite = ? WHERE name = ?");
 			ps.setInt(1, sprite);
 			ps.setString(2, user);
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public Integer getSprite(String user) {
+		try {
+			PreparedStatement ps = con.prepareStatement("SELECT sprite FROM users where name = ?");
+			ps.setString(1, user);
+			ResultSet set = ps.executeQuery();
+			if (set.next()) {
+				int i = set.getInt(1);
+				return set.wasNull() ? null : i;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+		return null;
 	}
 
 	public String setFurniture(String x, String y, String uid, String type, String user) {

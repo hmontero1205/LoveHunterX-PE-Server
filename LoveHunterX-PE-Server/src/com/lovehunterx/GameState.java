@@ -21,11 +21,11 @@ public class GameState {
 	public void addClient(Client cli) {
 		clients.put(cli.getAddress(), cli);
 	}
-
+	
 	public void removeClient(InetSocketAddress addr) {
 		clients.remove(addr);
 	}
-
+	
 	public Client getClient(InetSocketAddress addr) {
 		return clients.get(addr);
 	}

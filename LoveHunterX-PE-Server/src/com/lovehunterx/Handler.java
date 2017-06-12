@@ -8,7 +8,6 @@ import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -58,6 +57,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "choose_sprite":
 			System.out.println(message);
 			handleChooseSprite(p);
+			break;
 		case "disconnect":
 			System.out.println(message);
 			handleLeave();
@@ -137,14 +137,22 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				&& !Server.getState().isLoggedIn(p.getData("user"));
 
 		Packet authPacket = Packet.createAuthPacket(success);
-		Server.send(authPacket, sender);
 
 		if (success) {
 			Client cli = new Client(sender);
 			cli.setUsername(p.getData("user"));
 
+			Integer sprite = Server.db.getSprite(cli.getUsername());
+			cli.setSprite(sprite);
+
+			if (sprite == null) {
+				authPacket.addData("require_sprite", "true");
+			}
+			
 			Server.getState().addClient(cli);
 		}
+		
+		Server.send(authPacket, sender);
 	}
 
 	private void handleJoin(Packet p) {
@@ -152,6 +160,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		if (c == null) {
 			return;
 		}
+		
 		Server.disconnect(sender);
 
 		String room = p.getData("room");
@@ -165,10 +174,11 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		} else {
 			updatePlayers(c, p);
 		}
-		
+
 		p.addData("user", c.getUsername());
 		p.addData("x", "0");
 		p.addData("y", "0");
+		p.addData("sprite", String.valueOf(c.getSprite()));
 		Server.send(p, sender);
 	}
 	
@@ -192,6 +202,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	public void updatePlayers(Client c, Packet p) {
 		Packet update = Packet.createJoinPacket(c.getUsername(), c.getRoom(), 0, 0);
+		update.addData("sprite", String.valueOf(c.getSprite()));
 
 		for (Client other : Server.getState().getClients()) {
 			if (!other.isInRoom(c.getRoom()) || other.getUsername().equals(c.getUsername())) {
@@ -201,6 +212,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			p.addData("user", other.getUsername());
 			p.addData("x", String.valueOf(other.getX()));
 			p.addData("y", String.valueOf(other.getY()));
+			p.addData("sprite", String.valueOf(other.getSprite()));
 			p.addData("vel_x", String.valueOf(other.getVelocityX()));
 			p.addData("vel_y", String.valueOf(other.getVelocityY()));
 			Server.send(p, sender);
@@ -288,7 +300,13 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 	}
 
 	private void handleChooseSprite(Packet p) {
-		
+		Client c = Server.getState().getClient(sender);
+		if (c == null) {	
+			return;
+		}
+
+		c.setSprite(Integer.valueOf(p.getData("sprite")));
+		Server.db.changeSprite(c.getUsername(), Integer.valueOf(p.getData("sprite")));
 	}
 
 	public void handleLeave() {

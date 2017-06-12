@@ -8,6 +8,7 @@ public class Client {
 	private InetSocketAddress addr;
 	private String username;
 	private String room;
+	private Integer sprite;
 	private float x, y;
 	private float velX, velY;
 	private byte delta = 0b0000;
@@ -61,6 +62,14 @@ public class Client {
 
 	public boolean isAFK() {
 		return afk == AFK_TIMEOUT;
+	}
+	
+	public void setSprite(Integer i) {
+		this.sprite = i;
+	}
+
+	public Integer getSprite() {
+		return sprite;
 	}
 
 	public Packet getDeltaUpdate() {
