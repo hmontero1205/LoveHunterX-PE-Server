@@ -50,6 +50,11 @@ public class Server {
 		if (c == null) {
 			return;
 		}
+		
+		if (c.getGame() != null) {
+			c.getGame().disconnect(c);
+		}
+		
 
 		Packet leave = Packet.createLeavePacket(c.getUsername(), c.getRoom());
 		for (Client other : Server.getState().getClients()) {

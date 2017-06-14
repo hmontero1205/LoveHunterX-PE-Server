@@ -21,6 +21,8 @@ public abstract class Minigame {
 	
 	public abstract void init();
 	
+	public abstract void disconnect(Client cli);
+	
 	public Client getOpponent(Client player) {
 		return playerOne.equals(player) ? playerTwo : playerOne;
 	}

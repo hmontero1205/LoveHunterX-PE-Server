@@ -48,15 +48,15 @@ public class TicTacToe extends Minigame {
 			getPlayerTwo().setGame(null);
 		} else if (hasTied()) {
 			packet.addData("result", "tied");
-			Server.send(packet, getOpponent(sender).getAddress());
-			Server.send(packet, sender.getAddress());
 			packet.addData("opp", sender.getUsername());
 			Server.send(packet, getOpponent(sender).getAddress());
+
+			packet.addData("opp", getOpponent(sender).getUsername());
+			Server.send(packet, sender.getAddress());
 
 			getPlayerOne().setGame(null);
 			getPlayerTwo().setGame(null);
 		}
-		
 	}
 
 	public boolean hasWon(int mode, int row, int col) {
@@ -133,4 +133,14 @@ public class TicTacToe extends Minigame {
 		playerTwoTurn = false;
 	}
 
+	@Override
+	public void disconnect(Client cli) {
+		Packet packet = new Packet("game_end");
+		packet.addData("opp", cli.getUsername());
+		packet.addData("result", "dc");
+		Server.send(packet, getOpponent(cli).getAddress());
+
+		getPlayerOne().setGame(null);
+		getPlayerTwo().setGame(null);
+	}
 }
