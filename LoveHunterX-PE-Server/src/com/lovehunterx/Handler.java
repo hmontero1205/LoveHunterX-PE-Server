@@ -33,19 +33,15 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		Packet p = new Packet(obj);
 		switch (p.getAction()) {
 		case "alive":
-			System.out.println(message);
 			handleAlive();
 			break;
 		case "auth":
-			System.out.println(message);
 			handleAuthentication(p);
 			break;
 		case "reg":
-			System.out.println(message);
 			handleRegistration(p);
 			break;
 		case "join":
-			System.out.println(message);
 			handleJoin(p);
 			break;
 		case "chat":
@@ -55,49 +51,102 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			handleMovement(p);
 			break;
 		case "choose_sprite":
-			System.out.println(message);
 			handleChooseSprite(p);
 			break;
 		case "disconnect":
-			System.out.println(message);
 			handleLeave();
 			break;
 		case "update_furniture":
-			System.out.println(message);
 			handleSetFurniture(p);
 			break;
 		case "remove_furniture":
-			System.out.println(message);
 			handleRemoveFurniture(p);
-			break;		
+			break;
 		case "get_money":
-			System.out.println(message);
 			handleGetMoney(p);
 			break;
 		case "purchase":
-			System.out.println(message);
 			handlePurchase(p);
 			break;
 		case "status":
-			System.out.println(message);
 			handleStatusCheck();
 			break;
+		case "invite":
+			handleInvite(p);
+			break;
+		case "decision":
+			handleDecision(p);
+			break;
+		case "choose_move":
+			Client cli = Server.getState().getClient(sender);
+			if (cli == null) {
+				break;
+			} else {
+				cli.getGame().handle(p, cli);
+			}
+
+			break;
+		}
+		
+		if (!p.getAction().equals("move")) {
+			System.out.println(message);
 		}
 	}
 
+	private void handleDecision(Packet p) {
+		Client cli = Server.getState().getClient(sender);
+		if (cli == null) {
+			return;
+		}
+		
+		Client target = Server.getState().getClient(p.getData("player"));
+		if (target == null) {
+			return;
+		}
+		
+		if (p.getData("choice").equals("true")) {
+			Minigame game = null;
+			if (target.getInvitedGame().equals("ttt")) {
+				game = new TicTacToe(target, cli);
+			} else if (target.getInvitedGame().equals("wam")) {
+				return;
+			}
+			game.init();
+
+			Packet packet = Packet.createNotifcationPacket(target.getUsername() + " has accepted your invitation");
+			Server.send(packet, target.getAddress());
+		} else {
+			Packet packet = Packet.createNotifcationPacket(target.getUsername() + " has declined your invitation");
+			Server.send(packet, target.getAddress());
+		}
+	}
+
+	private void handleInvite(Packet p) {
+		Client cli = Server.getState().getClient(sender);
+		if (cli == null) {
+			return;
+		}
+		
+		Client target = Server.getState().getClient(p.getData("player"));
+		if (target == null) {
+			return;
+		}
+
+		cli.invite(target.getUsername(), p.getData("game"));
+		p.addData("player", cli.getUsername());
+		Server.send(p, target.getAddress());
+	}
+
 	private void handlePurchase(Packet p) {
-		Server.db.updateMoney(p.getData("user"),p.getData("money"));
+		Server.db.updateMoney(p.getData("user"), p.getData("money"));
 		Server.db.addToInventory(p.getData("user"), p.getData("type"));
 		Server.send(p, sender);
-		
 	}
 
 	private void handleGetMoney(Packet p) {
 		double money = Server.db.getMoney(p.getData("user"));
 		p.addData("money", Double.toString(money));
 		Server.send(p, sender);
-		
-		
 	}
 
 	private void handleSetFurniture(Packet p) {
@@ -105,6 +154,10 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		String uid = Server.db.setFurniture(p.getData("x"), p.getData("y"), p.getData("uid"), p.getData("type"),
 				client.getUsername());
 		p.addData("uid", uid);
+		if (uid == null) {
+			return;
+		}
+
 		for (Client other : Server.getState().getClients()) {
 			if (!other.isInRoom(client.getRoom())) {
 				continue;
@@ -113,7 +166,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			Server.send(p, other.getAddress());
 		}
 	}
-	
+
 	private void handleRemoveFurniture(Packet p) {
 		Client client = Server.getState().getClient(sender);
 		Server.db.removeFurniture(p.getData("uid"), p.getData("type"), client.getUsername());
@@ -148,10 +201,10 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			if (sprite == null) {
 				authPacket.addData("require_sprite", "true");
 			}
-			
+
 			Server.getState().addClient(cli);
 		}
-		
+
 		Server.send(authPacket, sender);
 	}
 
@@ -160,7 +213,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		if (c == null) {
 			return;
 		}
-		
+
 		Server.disconnect(sender);
 
 		String room = p.getData("room");
@@ -168,7 +221,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 		updateInventory(sender);
 		updateFurniture(sender);
-		
+
 		if (room.equals("Hallway")) {
 			sendDoors(c);
 		} else {
@@ -181,18 +234,18 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		p.addData("sprite", String.valueOf(c.getSprite()));
 		Server.send(p, sender);
 	}
-	
+
 	public void sendDoors(Client c) {
 		Packet door = Packet.createFurniturePacket(-1, 50, 115, "Door");
 		door.addData("destination", c.getUsername());
 		Server.send(door, sender);
-		
+
 		int uid = -1, x = 50;
 		for (Client other : Server.getState().getClients()) {
 			if (other.getUsername().equals(c.getUsername())) {
 				continue;
 			}
-			
+
 			door.addData("destination", other.getUsername());
 			door.addData("uid", String.valueOf(--uid));
 			door.addData("x", String.valueOf(x += 200));
@@ -225,7 +278,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		ResultSet userInventory = Server.db.getInventory(c.getUsername());
 		try {
 			while (userInventory.next()) {
-				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"), userInventory.getInt("amount"), c.getUsername());
+				Packet inventoryPacket = Packet.createInventoryPacket(userInventory.getString("type"),
+						userInventory.getInt("amount"), c.getUsername());
 				Server.send(inventoryPacket, client);
 			}
 		} catch (SQLException e) {
@@ -238,7 +292,8 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		ResultSet furniture = Server.db.getFurniture(c.getRoom());
 		try {
 			while (furniture.next()) {
-				Packet furniturePacket = Packet.createFurniturePacket(furniture.getInt(2), furniture.getFloat(4), furniture.getFloat(5), furniture.getString(3)); 
+				Packet furniturePacket = Packet.createFurniturePacket(furniture.getInt(2), furniture.getFloat(4),
+						furniture.getFloat(5), furniture.getString(3));
 				Server.send(furniturePacket, client);
 			}
 		} catch (SQLException e) {
@@ -264,7 +319,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			c.setVelocityX(velX);
 		}
 	}
-	
+
 	private void handleChat(Packet p) {
 		Client c = Server.getState().getClient(sender);
 		if (c == null) {
@@ -273,14 +328,15 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 		p.addData("user", c.getUsername());
 		for (Client other : Server.getState().getClients()) {
-			if (!c.isInRoom(other.getRoom()) && !(c.isInRoom("Hallway") && other.getUsername().equals(c.getUsername()))) {
+			if (!c.isInRoom(other.getRoom())
+					&& !(c.isInRoom("Hallway") && other.getUsername().equals(c.getUsername()))) {
 				continue;
 			}
-			
+
 			Server.send(p, other.getAddress());
 		}
 	}
-	
+
 	private void handleAlive() {
 		Client c = Server.getState().getClient(sender);
 		if (c == null) {
@@ -289,19 +345,19 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 		c.resetAFK();
 	}
-	
+
 	private void handleStatusCheck() {
 		Client c = Server.getState().getClient(sender);
-		
+
 		Packet p = new Packet("status");
 		p.addData("state", c == null ? "false" : "true");
-		
+
 		Server.send(p, sender);
 	}
 
 	private void handleChooseSprite(Packet p) {
 		Client c = Server.getState().getClient(sender);
-		if (c == null) {	
+		if (c == null) {
 			return;
 		}
 

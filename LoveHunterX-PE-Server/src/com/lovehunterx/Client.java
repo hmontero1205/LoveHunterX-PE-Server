@@ -4,7 +4,7 @@ import java.net.InetSocketAddress;
 
 public class Client {
 	private static final short AFK_TIMEOUT = 300;
-	
+
 	private InetSocketAddress addr;
 	private String username;
 	private String room;
@@ -13,6 +13,12 @@ public class Client {
 	private float velX, velY;
 	private byte delta = 0b0000;
 	private int afk;
+	
+	private String invited;
+	private String invitedGame;
+	private long lastInvite;
+	
+	private Minigame game;
 
 	public Client(InetSocketAddress addr) {
 		this.addr = addr;
@@ -28,6 +34,31 @@ public class Client {
 
 	public String getUsername() {
 		return username;
+	}
+	
+	public void setGame(Minigame game) {
+		this.game = game;
+	}
+	
+	public Minigame getGame() {
+		return game;
+	}
+	
+	public boolean isInGame() {
+		return game == null;
+	}
+
+	public void invite(String username, String game) {
+		this.invited = username;
+		this.invitedGame = game;
+	}
+	
+	public boolean hasInvited(String u) {
+		return u.equals(invited);
+	}
+	
+	public String getInvitedGame() {
+		return invitedGame;
 	}
 
 	public void joinRoom(String room) {
@@ -50,7 +81,7 @@ public class Client {
 		if (afk < AFK_TIMEOUT) {
 			afk++;
 		}
-		
+
 		this.setX(this.getX() + this.getVelocityX() * 100 * delta);
 		this.setY(Math.max(0, this.getY() + this.getVelocityY() * 200 * delta));
 		this.setVelocityY(this.y != 0 ? this.getVelocityY() - (2F * delta) : 0);
@@ -63,7 +94,7 @@ public class Client {
 	public boolean isAFK() {
 		return afk == AFK_TIMEOUT;
 	}
-	
+
 	public void setSprite(Integer i) {
 		this.sprite = i;
 	}
@@ -75,7 +106,7 @@ public class Client {
 	public Packet getDeltaUpdate() {
 		Packet packet = new Packet("move");
 		packet.addData("user", username);
-		
+
 		if (hasDelta(3)) {
 			packet.addData("x", String.valueOf(x));
 		}

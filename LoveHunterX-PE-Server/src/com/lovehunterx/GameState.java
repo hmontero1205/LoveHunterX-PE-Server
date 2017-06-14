@@ -21,11 +21,21 @@ public class GameState {
 	public void addClient(Client cli) {
 		clients.put(cli.getAddress(), cli);
 	}
-	
+
 	public void removeClient(InetSocketAddress addr) {
 		clients.remove(addr);
 	}
 	
+	public Client getClient(String username) {
+		for (Client c : clients.values()) {
+			if (c.getUsername().equals(username)) {
+				return c;
+			}
+		}
+		
+		return null;
+	}
+
 	public Client getClient(InetSocketAddress addr) {
 		return clients.get(addr);
 	}
@@ -61,7 +71,7 @@ public class GameState {
 
 		public void update() {
 			for (Client cli : getClients()) {
-				cli.update((1000F / 60 ) / 1000);
+				cli.update((1000F / 60) / 1000);
 			}
 		}
 
@@ -81,13 +91,14 @@ public class GameState {
 				}
 
 				for (Client other : getClients()) {
-					if (!cli.isInRoom(other.getRoom()) && !(cli.isInRoom("Hallway") && other.getUsername().equals(cli.getUsername()))) {
+					if (!cli.isInRoom(other.getRoom())
+							&& !(cli.isInRoom("Hallway") && other.getUsername().equals(cli.getUsername()))) {
 						continue;
 					}
 
 					Server.send(delta, other.getAddress());
 				}
-				
+
 				cli.clearDelta();
 			}
 		}

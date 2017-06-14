@@ -68,6 +68,12 @@ public class Packet {
 		joinData.put("y", String.valueOf(y));
 		return new Packet("join", joinData);
 	}
+	
+	public static Packet createNotifcationPacket(String message) {
+		HashMap<String, String> notify = new HashMap<String, String>();
+		notify.put("message", message);
+		return new Packet("notify", notify);
+	}
 
 	public static Packet createLeavePacket(String user, String room) {
 		HashMap<String, String> leaveData = new HashMap<String, String>();
