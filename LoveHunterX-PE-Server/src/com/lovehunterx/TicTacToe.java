@@ -45,6 +45,9 @@ public class TicTacToe extends Minigame {
 			packet.addData("result", "lost");
 			Server.send(packet, getOpponent(sender).getAddress());
 
+			double money = Server.db.getMoney(sender.getUsername());
+			Server.db.updateMoney(sender.getUsername(), String.valueOf(money + 50));
+			
 			getPlayerOne().setGame(null);
 			getPlayerTwo().setGame(null);
 		} else if (hasTied()) {

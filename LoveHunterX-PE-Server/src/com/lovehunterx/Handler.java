@@ -76,6 +76,9 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		case "invite":
 			handleInvite(p);
 			break;
+		case "tip":
+			handleTip(p);
+			break;
 		case "decision":
 			handleDecision(p);
 			break;
@@ -93,6 +96,36 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		if (!p.getAction().equals("move")) {
 			System.out.println(message);
 		}
+	}
+
+	private void handleTip(Packet p) {
+		Client cli = Server.getState().getClient(sender);
+		if (cli == null) {
+			return;
+		}
+		
+		double money = Server.db.getMoney(cli.getUsername());
+		if (money < 5) {
+			Packet packet = Packet.createNotifcationPacket("You do not have five dollars! :(");
+			Server.send(packet, sender);
+			return;
+		}
+		
+		Client target = Server.getState().getClient(p.getData("player"));
+		if (target == null) {
+			return;
+		}
+		
+		Server.db.updateMoney(cli.getUsername(), String.valueOf(money - 5));
+		
+		double targetMoney = Server.db.getMoney(target.getUsername());
+		Server.db.updateMoney(target.getUsername(), String.valueOf(targetMoney + 5));
+		
+		Packet resp = Packet.createNotifcationPacket("You tipped " + target.getUsername() + " five dollars! <3");
+		Server.send(resp, sender);
+		
+		Packet packet = Packet.createNotifcationPacket(cli.getUsername() + " tipped you five dollars! :)");
+		Server.send(packet, target.getAddress());
 	}
 
 	private void handleDecision(Packet p) {

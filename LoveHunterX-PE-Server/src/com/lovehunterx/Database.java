@@ -199,13 +199,12 @@ public class Database {
 			selectStatement.setString(1, name);
 			ResultSet rs = selectStatement.executeQuery();
 			
-			if(rs.next())
+			if (rs.next())
 				return rs.getDouble("money");
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		return 0;
 		
 	}
@@ -216,13 +215,9 @@ public class Database {
 			upStatement.setDouble(1, Double.parseDouble(money));
 			upStatement.setString(2, user);
 			upStatement.executeUpdate();
-			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
-		
+		}	
 	}
 
 	public void addToInventory(String user, String type) {
