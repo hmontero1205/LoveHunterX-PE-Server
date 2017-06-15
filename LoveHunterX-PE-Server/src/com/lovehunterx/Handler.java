@@ -3,6 +3,8 @@ package com.lovehunterx;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
@@ -81,7 +83,7 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 			Client cli = Server.getState().getClient(sender);
 			if (cli == null) {
 				break;
-			} else {
+			} else if (cli.getGame() != null) {
 				cli.getGame().handle(p, cli);
 			}
 
@@ -95,15 +97,15 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private void handleDecision(Packet p) {
 		Client cli = Server.getState().getClient(sender);
-		if (cli == null) {
+		if (cli == null || cli.getGame() != null) {
 			return;
 		}
-		
+
 		Client target = Server.getState().getClient(p.getData("player"));
-		if (target == null) {
+		if (target == null || !target.hasInvited(cli.getUsername()) || target.getGame() != null) {
 			return;
 		}
-		
+
 		if (p.getData("choice").equals("true")) {
 			Minigame game = null;
 			if (target.getInvitedGame().equals("ttt")) {
@@ -112,11 +114,14 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 				return;
 			}
 			game.init();
+			
+			cli.invite(null, null);
+			target.invite(null, null);
 
-			Packet packet = Packet.createNotifcationPacket(target.getUsername() + " has accepted your invitation");
+			Packet packet = Packet.createNotifcationPacket(cli.getUsername() + " has accepted your invitation");
 			Server.send(packet, target.getAddress());
 		} else {
-			Packet packet = Packet.createNotifcationPacket(target.getUsername() + " has declined your invitation");
+			Packet packet = Packet.createNotifcationPacket(cli.getUsername() + " has declined your invitation");
 			Server.send(packet, target.getAddress());
 		}
 	}
@@ -241,12 +246,17 @@ public class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 		Server.send(door, sender);
 
 		int uid = -1, x = 50;
-		for (Client other : Server.getState().getClients()) {
-			if (other.getUsername().equals(c.getUsername())) {
-				continue;
-			}
 
-			door.addData("destination", other.getUsername());
+		ArrayList<Client> clients = new ArrayList(Server.getState().getClients());
+		ArrayList<Client> sent = new ArrayList<Client>();
+		sent.add(c);
+
+		for (int i = 0; i < Math.min(4, Server.getState().getClients().size() - 1); i++) {
+			Client chosen;
+			while (sent.contains(chosen = clients.get((int) (Math.random() * clients.size()))));
+			sent.add(chosen);
+			
+			door.addData("destination", chosen.getUsername());
 			door.addData("uid", String.valueOf(--uid));
 			door.addData("x", String.valueOf(x += 200));
 			Server.send(door, sender);

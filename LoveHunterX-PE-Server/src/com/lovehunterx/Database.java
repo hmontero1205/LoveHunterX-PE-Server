@@ -38,11 +38,10 @@ public class Database {
 			if (rs.next())
 				return false;
 			else {
-				PreparedStatement insStatement = con.prepareStatement("INSERT INTO users (name, pass, sprite_number, money) VALUES (?, ?, ?, ?)");
+				PreparedStatement insStatement = con.prepareStatement("INSERT INTO users (name, pass, money) VALUES (?, ?, ?)");
 				insStatement.setString(1, u);
 				insStatement.setString(2, p);
-				insStatement.setInt(3, 0);
-				insStatement.setDouble(4, 100.00);
+				insStatement.setDouble(3, 100.00);
 				insStatement.executeUpdate();
 
 				PreparedStatement insStatement2 = con.prepareStatement("INSERT INTO inventories (user, type, amount) VALUES (?, ?, ?)");

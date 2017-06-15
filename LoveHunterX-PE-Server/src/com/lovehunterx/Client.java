@@ -16,7 +16,6 @@ public class Client {
 	
 	private String invited;
 	private String invitedGame;
-	private long lastInvite;
 	
 	private Minigame game;
 
@@ -56,7 +55,7 @@ public class Client {
 	public boolean hasInvited(String u) {
 		return u.equals(invited);
 	}
-	
+
 	public String getInvitedGame() {
 		return invitedGame;
 	}

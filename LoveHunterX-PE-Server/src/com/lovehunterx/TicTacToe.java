@@ -8,6 +8,7 @@ public class TicTacToe extends Minigame {
 
 	public TicTacToe(Client one, Client two) {
 		super(one, two);
+
 		one.setGame(this);
 		two.setGame(this);
 
@@ -34,7 +35,7 @@ public class TicTacToe extends Minigame {
 		}
 
 		Server.send(p, getOpponent(sender).getAddress());
-		
+
 		Packet packet = new Packet("game_end");
 		if (hasWon(board[i][j], i, j)) {
 			packet.addData("result", "won");
@@ -56,9 +57,15 @@ public class TicTacToe extends Minigame {
 
 			getPlayerOne().setGame(null);
 			getPlayerTwo().setGame(null);
+		} else {
+			Packet turn = Packet.createNotifcationPacket("Your turn!");
+			Server.send(turn, getOpponent(sender).getAddress());
+			Packet wait = Packet.createNotifcationPacket("Waiting for opponent...");
+			Server.send(wait, sender.getAddress());
 		}
 	}
 
+	// xD don't look here
 	public boolean hasWon(int mode, int row, int col) {
 		int win = 0;
 		for (int i = 0; i < 3; i++) {
@@ -66,47 +73,47 @@ public class TicTacToe extends Minigame {
 				win++;
 			}
 		}
-		
+
 		if (win == 3) {
 			return true;
 		}
-		
+
 		win = 0;
 		for (int i = 0; i < 3; i++) {
 			if (board[row][i] == mode) {
 				win++;
 			}
 		}
-		
+
 		if (win == 3) {
 			return true;
 		}
-		
+
 		win = 0;
 		for (int i = 0; i < 3; i++) {
 			if (board[3 - i - 1][i] == mode) {
 				win++;
 			}
 		}
-		
+
 		if (win == 3) {
 			return true;
 		}
-		
+
 		win = 0;
 		for (int i = 0; i < 3; i++) {
 			if (board[i][i] == mode) {
 				win++;
 			}
 		}
-		
+
 		if (win == 3) {
 			return true;
 		}
-		
+
 		return false;
 	}
-	
+
 	public boolean hasTied() {
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
@@ -115,7 +122,7 @@ public class TicTacToe extends Minigame {
 				}
 			}
 		}
-		
+
 		return true;
 	}
 
